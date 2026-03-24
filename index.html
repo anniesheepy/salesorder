@@ -88,7 +88,8 @@
         <div class="info-bar">
           <div class="pill">JOB#:<strong id="info-job">---</strong></div>
           <div class="pill">PO#:<strong id="info-po">---</strong></div>
-          </div>
+          <div class="pill">SO#:<strong id="info-so">---</strong></div>
+      </div>
 
         <div class="preview-box">
           <img id="main-img" src="" alt="Sales Order Preview" class="hidden">
@@ -166,10 +167,12 @@
         // --- DEBUG 修正：先檢查元素是否存在，避免因找不到 info-company 導致 js 崩潰 ---
         const jobEl = document.getElementById('info-job');
         const poEl = document.getElementById('info-po');
+        const soEl = document.getElementById('info-so');
         const compEl = document.getElementById('info-company');
 
         if (jobEl) jobEl.textContent = data.order_number || '---';
         if (poEl) poEl.textContent = data.po_number || '---';
+        if (soEl) soEl.textContent = data.so_number || '---';
         if (compEl) compEl.textContent = data.company || '---';
         
         if (data.preview_image) {
