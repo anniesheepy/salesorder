@@ -31,25 +31,22 @@
     .info-bar { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 25px; }
     .pill { 
         background: #EDAA00;
-        color: #f0f0f0; 
-        padding: 6px 24px;
+        color: #ffffff; 
+        padding: 6px 20px;
         border-radius: 4px;
-        font-size: 22px;
+        font-size: 18px;
         font-weight: 600;
-        border: none;
-        box-shadow: 0 3px 6px rgba(0,0,0,0.12);
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         display: flex;
         align-items: center;
     }
     .pill strong { 
-        color: #ffffff; 
         margin-left: 8px;
         font-weight: 800;
-        text-shadow: 1px 1px 0px rgba(0,0,0,0.15);
     }
 
     /* 圖片預覽區域 */
-    .preview-box { background: #eee; border: 2px dashed #ccc; border-radius: 6px; min-height: 500px; display: flex; align-items: center; justify-content: center; position: relative; }
+    .preview-box { background: #eee; border: 2px dashed #ccc; border-radius: 6px; min-height: 400px; display: flex; align-items: center; justify-content: center; position: relative; }
     .preview-box img { max-width: 100%; height: auto; display: block; border-radius: 4px; }
     #placeholder { color: #999; font-weight: 600; }
 
@@ -63,7 +60,6 @@
     .btn { display: block; width: 100%; padding: 15px; border: none; border-radius: 4px; font-weight: 700; cursor: pointer; text-transform: uppercase; transition: 0.3s; font-size: 15px; text-align: center; text-decoration: none; }
     .btn-submit { background: #EDAA00; color: #fff; border-bottom: 3px solid #A0522D; }
     .btn-submit:hover { background: #A0522D; transform: translateY(-1px); }
-    .btn-download { background: #666666; color: #fff; margin-top: 15px; }
 
     #loading-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.95); z-index: 999; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #666666; font-size: 18px; letter-spacing: 1px; }
     .success-screen { text-align: center; padding: 40px 0; }
@@ -86,17 +82,16 @@
       <div class="card-header">🖼 Sales Order Preview</div>
       <div class="card-body">
         <div class="info-bar">
-          <div class="pill">JOB#:<strong id="info-job">---</strong></div>
-          <div class="pill">PO#:<strong id="info-po">---</strong></div>
-          <div class="pill">SO#:<strong id="info-so">---</strong></div>
+          <div class="pill">JOB#: <strong id="info-job">---</strong></div>
+          <div class="pill">PO#: <strong id="info-po">---</strong></div>
+          <div class="pill">SO#: <strong id="info-so">---</strong></div>
         </div>
 
         <div class="preview-box">
           <img id="main-img" src="" alt="Sales Order Preview" class="hidden">
-          <p id="placeholder">Fetching SO from server...</p>
+          <p id="placeholder">Connecting to server...</p>
         </div>
-
-        </div>
+      </div>
     </div>
 
     <div class="card">
@@ -105,18 +100,18 @@
         
         <div id="success-screen" class="success-screen hidden">
           <h2>✅ Submitted!</h2>
-          <p>Your response has been successfully recorded. Our team will review it shortly.</p>
+          <p>Your response has been recorded. Our team will review it shortly.</p>
         </div>
 
         <form id="approval-form">
           <div class="form-group">
             <label>Your Full Name *</label>
-            <input type="text" name="name" class="form-control" required placeholder="John Doe">
+            <input type="text" name="name" class="form-control" required placeholder="Full Name">
           </div>
 
           <div class="form-group">
             <label>Your Email Address *</label>
-            <input type="email" name="email" class="form-control" required placeholder="john@example.com">
+            <input type="email" name="email" class="form-control" required placeholder="email@address.com">
           </div>
 
           <div class="form-group">
@@ -160,44 +155,43 @@
       return;
     }
 
-    // --- FETCH DATA ---
+    // 1. Fetch Order Data
     fetch(`${N8N_GET_URL}?pid=${pid}`)
-      .then(res => { if (!res.ok) throw new Error(); return res.json(); })
+      .then(res => {
+        if (!res.ok) throw new Error('Network response was not ok');
+        return res.json();
+      })
       .then(data => {
-        // Update basic info
-        const jobEl = document.getElementById('info-job');
-        const poEl = document.getElementById('info-po');
-        const soEl = document.getElementById('info-so');
+        // Log data for debugging
+        console.log('Data received:', data);
 
-        if (jobEl) jobEl.textContent = data.order_number || '---';
-        if (poEl) poEl.textContent = data.po_number || '---';
-        if (soEl) soEl.textContent = data.so_number || '---';
+        // Handle case where n8n returns an array
+        const item = Array.isArray(data) ? data[0] : data;
+
+        // Update UI Text
+        document.getElementById('info-job').textContent = item.order_number || '---';
+        document.getElementById('info-po').textContent = item.po_number || '---';
+        document.getElementById('info-so').textContent = item.so_number || '---';
         
         // Update Image
-        if (data.preview_image) {
+        if (item.preview_image) {
           const img = document.getElementById('main-img');
-          img.src = data.preview_image;
+          img.src = item.preview_image;
           img.classList.remove('hidden');
           document.getElementById('placeholder').classList.add('hidden');
         } else {
           document.getElementById('placeholder').textContent = 'No preview available.';
         }
 
-        // Update Download Button (Safe Check)
-        const downloadBtn = document.getElementById('download-btn');
-        if (downloadBtn && data.artwork_url) {
-          downloadBtn.href = data.artwork_url;
-        }
-
-        // Success: Hide overlay
+        // Remove Loader
         document.getElementById('loading-overlay').classList.add('hidden');
       })
       .catch(err => {
-        console.error(err);
-        document.getElementById('loading-overlay').innerHTML = '❌ Error: Could not connect to server.';
+        console.error('Fetch error:', err);
+        document.getElementById('loading-overlay').innerHTML = '❌ Error: Could not load data. Check console for details.';
       });
 
-    // --- FORM SUBMISSION ---
+    // 2. Form Submit Logic
     document.getElementById('approval-form').addEventListener('submit', function(e) {
       e.preventDefault();
       const submitBtn = document.getElementById('submit-btn');
@@ -207,21 +201,25 @@
       const formData = new FormData(this);
       formData.append('pid', pid);
 
-      fetch(N8N_POST_URL, { method: 'POST', body: formData })
+      fetch(N8N_POST_URL, { 
+        method: 'POST', 
+        body: formData 
+      })
       .then(res => {
         if (!res.ok) throw new Error('Submission failed');
         document.getElementById('approval-form').classList.add('hidden');
         document.getElementById('success-screen').classList.remove('hidden');
       })
       .catch(err => {
-        console.error(err);
-        alert('❌ Error: Could not submit your response.');
+        console.error('Submit error:', err);
+        alert('❌ Error: Could not submit response.');
         submitBtn.disabled = false;
         submitBtn.textContent = 'Submit My Response';
       });
     });
   });
 
+  // Handle dropdown changes
   function handleStatusChange(val) {
     const changesField = document.getElementById('changes-field');
     const textarea = document.getElementById('change-textarea');
