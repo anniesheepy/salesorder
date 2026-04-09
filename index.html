@@ -27,11 +27,11 @@
     .card-header { background: #666666; color: #fff; padding: 12px 20px; font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; }
     .card-body { padding: 25px; }
 
-    /* --- 資訊列 (Pills) 樣式 --- */
+    /* 資訊列 (Pills) 樣式 */
     .info-bar { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 25px; }
     .pill { 
         background: #EDAA00;
-        color: #f0f0f0;      /* 標籤標題顏色 */
+        color: #f0f0f0; 
         padding: 6px 24px;
         border-radius: 4px;
         font-size: 22px;
@@ -42,7 +42,7 @@
         align-items: center;
     }
     .pill strong { 
-        color: #ffffff;      /* 動態數值顏色 (JOB# / PO#) */
+        color: #ffffff; 
         margin-left: 8px;
         font-weight: 800;
         text-shadow: 1px 1px 0px rgba(0,0,0,0.15);
@@ -65,172 +65,4 @@
     .btn-submit:hover { background: #A0522D; transform: translateY(-1px); }
     .btn-download { background: #666666; color: #fff; margin-top: 15px; }
 
-    #loading-overlay { position: fixed; inset: 0; background: rgba(255,255,255,0.95); z-index: 999; display: flex; align-items: center; justify-content: center; font-weight: 700; color: #666666; font-size: 18px; letter-spacing: 1px; }
-    .success-screen { text-align: center; padding: 40px 0; }
-    .success-screen h2 { color: #EDAA00; margin-bottom: 10px; font-size: 28px; }
-  </style>
-</head>
-<body>
-
-<div id="loading-overlay">LOADING ORDER DETAILS...</div>
-
-<header class="site-header">
-  <img src="https://admartproducts.com/content/webimg/admart_new_aminate.svg" alt="ADmart Logo">
-  <div>Questions? <a href="mailto:ar@admartproducts.com" class="contact-link">Email Us</a></div>
-</header>
-
-<div class="main-container">
-  <div class="content-grid">
-    
-    <div class="card">
-      <div class="card-header">🖼 Sales Order Preview</div>
-      <div class="card-body">
-        <div class="info-bar">
-          <div class="pill">JOB#:<strong id="info-job">---</strong></div>
-          <div class="pill">PO#:<strong id="info-po">---</strong></div>
-          <div class="pill">SO#:<strong id="info-so">---</strong></div>
-      </div>
-
-        <div class="preview-box">
-          <img id="main-img" src="" alt="Sales Order Preview" class="hidden">
-          <p id="placeholder">Fetching SO from server...</p>
-        </div>
-
-        <!-- <a href="#" id="download-btn" class="btn btn-download" target="_blank">View / Download Full PDF</a> -->
-      </div>
-    </div>
-
-    <div class="card">
-      <div class="card-header">✍️ Approval Decision</div>
-      <div class="card-body">
-        
-        <div id="success-screen" class="success-screen hidden">
-          <h2>✅ Submitted!</h2>
-          <p>Your response has been successfully recorded. Our team will review it shortly.</p>
-        </div>
-
-        <form id="approval-form">
-          <div class="form-group">
-            <label>Your Full Name *</label>
-            <input type="text" name="name" class="form-control" required placeholder="John Doe">
-          </div>
-
-          <div class="form-group">
-            <label>Your Email Address *</label>
-            <input type="email" name="email" class="form-control" required placeholder="john@example.com">
-          </div>
-
-          <div class="form-group">
-            <label>Final Decision *</label>
-            <select name="status" class="form-control" required onchange="handleStatusChange(this.value)">
-              <option value="">-- Select --</option>
-              <option value="Approved">✅ Approved</option>
-              <option value="Changes Requested">🔄 Changes Requested</option>
-            </select>
-          </div>
-
-          <div id="changes-field" class="form-group hidden">
-            <label>Description of Changes *</label>
-            <textarea name="change_details" id="change-textarea" class="form-control" placeholder="Please specify what needs to be fixed..."></textarea>
-          </div>
-
-          <div class="form-group">
-            <label>Upload Reference (Optional)</label>
-            <input type="file" name="file_attachment" class="form-control" style="padding: 8px;">
-          </div>
-
-          <button type="submit" id="submit-btn" class="btn btn-submit">Submit My Response</button>
-        </form>
-
-      </div>
-    </div>
-
-  </div>
-</div>
-
-<script>
-  const N8N_GET_URL = 'https://admart.zeabur.app/webhook/so-get-order';
-  const N8N_POST_URL = 'https://admart.zeabur.app/webhook/so-approval-submit/';
-
-  document.addEventListener('DOMContentLoaded', () => {
-    const params = new URLSearchParams(window.location.search);
-    const pid = params.get('pid');
-
-    if (!pid) {
-      document.getElementById('loading-overlay').innerHTML = '❌ Error: Missing PID in URL.';
-      return;
-    }
-
-    fetch(`${N8N_GET_URL}?pid=${pid}`)
-      .then(res => { if (!res.ok) throw new Error(); return res.json(); })
-      .then(data => {
-        // --- DEBUG 修正：先檢查元素是否存在，避免因找不到 info-company 導致 js 崩潰 ---
-        const jobEl = document.getElementById('info-job');
-        const poEl = document.getElementById('info-po');
-        const soEl = document.getElementById('info-so');
-        const compEl = document.getElementById('info-company');
-
-        if (jobEl) jobEl.textContent = data.order_number || '---';
-        if (poEl) poEl.textContent = data.po_number || '---';
-        if (soEl) soEl.textContent = data.so_number || '---';
-        if (compEl) compEl.textContent = data.company || '---';
-        
-        if (data.preview_image) {
-          const img = document.getElementById('main-img');
-          img.src = data.preview_image;
-          img.classList.remove('hidden');
-          document.getElementById('placeholder').classList.add('hidden');
-        } else {
-          document.getElementById('placeholder').textContent = 'No preview available.';
-        }
-
-        if (data.artwork_url) {
-          document.getElementById('download-btn').href = data.artwork_url;
-        }
-        // 成功載入後隱藏 Loading 畫面
-        document.getElementById('loading-overlay').classList.add('hidden');
-      })
-      .catch(err => {
-        console.error(err);
-        document.getElementById('loading-overlay').innerHTML = '❌ Error: Could not connect to n8n server.';
-      });
-
-    document.getElementById('approval-form').addEventListener('submit', function(e) {
-      e.preventDefault();
-      const submitBtn = document.getElementById('submit-btn');
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'SUBMITTING...';
-
-      const formData = new FormData(this);
-      formData.append('pid', pid);
-
-      fetch(N8N_POST_URL, { method: 'POST', body: formData })
-      .then(res => {
-        if (!res.ok) throw new Error('Submission failed');
-        document.getElementById('approval-form').classList.add('hidden');
-        document.getElementById('success-screen').classList.remove('hidden');
-      })
-      .catch(err => {
-        console.error(err);
-        alert('❌ Error: Could not submit your response.');
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Submit My Response';
-      });
-    });
-  });
-
-  function handleStatusChange(val) {
-    const changesField = document.getElementById('changes-field');
-    const textarea = document.getElementById('change-textarea');
-    if (val === 'Changes Requested') {
-      changesField.classList.remove('hidden');
-      textarea.required = true;
-    } else {
-      changesField.classList.add('hidden');
-      textarea.required = false;
-    }
-  }
-</script>
-
-</body>
-</html>
+    #loading-overlay { position:
