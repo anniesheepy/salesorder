@@ -162,18 +162,11 @@
         return res.json();
       })
       .then(data => {
-        // Log data for debugging
-        console.log('Data received:', data);
-
-        // Handle case where n8n returns an array
         const item = Array.isArray(data) ? data[0] : data;
-
-        // Update UI Text
         document.getElementById('info-job').textContent = item.order_number || '---';
         document.getElementById('info-po').textContent = item.po_number || '---';
         document.getElementById('info-so').textContent = item.so_number || '---';
         
-        // Update Image
         if (item.preview_image) {
           const img = document.getElementById('main-img');
           img.src = item.preview_image;
@@ -182,28 +175,50 @@
         } else {
           document.getElementById('placeholder').textContent = 'No preview available.';
         }
-
-        // Remove Loader
         document.getElementById('loading-overlay').classList.add('hidden');
       })
       .catch(err => {
         console.error('Fetch error:', err);
-        document.getElementById('loading-overlay').innerHTML = '❌ Error: Could not load data. Check console for details.';
+        document.getElementById('loading-overlay').innerHTML = '❌ Error: Could not load data.';
       });
 
-    // 2. Form Submit Logic
-    document.getElementById('approval-form').addEventListener('submit', function(e) {
+    // 2. Form Submit Logic (JSON + Base64 Workaround)
+    document.getElementById('approval-form').addEventListener('submit', async function(e) {
       e.preventDefault();
       const submitBtn = document.getElementById('submit-btn');
       submitBtn.disabled = true;
       submitBtn.textContent = 'SUBMITTING...';
 
-      const formData = new FormData(this);
-      formData.append('pid', pid);
+      const fileInput = this.querySelector('input[name="file_attachment"]');
+      let base64File = null;
+      let fileName = null;
+
+      // Convert file to Base64 if it exists
+      if (fileInput.files.length > 0) {
+        const file = fileInput.files[0];
+        fileName = file.name;
+        base64File = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result.split(',')[1]); // Get just the Base64 string part
+          reader.readAsDataURL(file);
+        });
+      }
+
+      // Construct JSON Payload
+      const payload = {
+        name: this.name.value,
+        email: this.email.value,
+        status: this.status.value,
+        change_details: this.change_details.value,
+        pid: pid,
+        file_data: base64File,
+        file_name: fileName
+      };
 
       fetch(N8N_POST_URL, { 
         method: 'POST', 
-        body: formData 
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload) 
       })
       .then(res => {
         if (!res.ok) throw new Error('Submission failed');
@@ -219,7 +234,6 @@
     });
   });
 
-  // Handle dropdown changes
   function handleStatusChange(val) {
     const changesField = document.getElementById('changes-field');
     const textarea = document.getElementById('change-textarea');
